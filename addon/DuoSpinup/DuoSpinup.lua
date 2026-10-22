@@ -72,11 +72,15 @@ end
 
 local function ApplyBars()
     local b = D.actionBars
-    if SetActionBarToggles then
-        SetActionBarToggles(b[1], b[2], b[3], b[4], true)
+    if SetActionBarToggles and _G.MultiBar5 then
+        -- 8-bar client: one toggle per bar 2-8
+        SetActionBarToggles(b[1], b[2], b[3], b[4], b[5], b[6], b[7])
+    elseif SetActionBarToggles then
+        -- 4-bar client: 5th argument is "always show bars", leave it as it is
+        SetActionBarToggles(b[1], b[2], b[3], b[4], GetCVar("alwaysShowActionBars") == "1")
     else
         local bits = 0
-        for i = 1, 4 do if b[i] then bits = bits + 2 ^ (i - 1) end end
+        for i = 1, #b do if b[i] then bits = bits + 2 ^ (i - 1) end end
         SetCVar("enableMultiActionBars", tostring(bits))
     end
     if MultiActionBar_Update then MultiActionBar_Update() end

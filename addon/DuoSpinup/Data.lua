@@ -16,8 +16,9 @@ D.cvars = {
     minimapZoom = "5",
 }
 
--- Bars shown: bottom-left, bottom-right, right, right 2 (Kaniken: enableMultiActionBars "7").
-D.actionBars = { true, true, true, false }
+-- Action Bars 2-8 shown (Kaniken: enableMultiActionBars "7" = bars 2, 3, 4).
+--                bar2  bar3  bar4  bar5   bar6   bar7   bar8
+D.actionBars = { true, true, true, false, false, false, false }
 
 -- Edit Mode layout to switch to (lives in edit-mode-cache-account.txt).
 D.editModeLayout = "main"

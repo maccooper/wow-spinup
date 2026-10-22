@@ -27,7 +27,8 @@ function SetCVar(k, v) W.cvars[k] = v end
 function GetBindingAction(k) return W.bindings[k] or "" end
 function SetBinding(k, a) W.bindings[k] = a; return true end
 function SaveBindings(set) W.saved = set end
-function SetActionBarToggles(a, b, c, d) W.bars = { a, b, c, d } end
+MultiBar5 = {} -- this client has 8 bars
+function SetActionBarToggles(...) W.bars = { ... } end
 function MultiActionBar_Update() end
 function InCombatLockdown() return W.combat end
 function GetMacroIndexByName(n) for i, m in ipairs(W.macros) do if m.name == n then return i end end return 0 end
@@ -107,7 +108,8 @@ Login()
 check(rxpDB.keys.profile == "Duo", "RXP starts on Duo at load (no reload)")
 check(RXPSettings.profiles.Duo.autoSellJunk and RXPSettings.profiles.Duo.framePositions.RXPFrame, "Duo profile has Kaniken settings")
 check(AceDB:New("Other", {}).keys.profile ~= "Duo", "AceDB hook removed, other addons unaffected")
-check(W.bars and W.bars[1] and W.bars[2] and W.bars[3] and not W.bars[4], "bars on")
+check(W.bars and W.bars[1] and W.bars[2] and W.bars[3] and not W.bars[4], "bars 2-4 on")
+check(#W.bars == 7 and not (W.bars[5] or W.bars[6] or W.bars[7]), "bars 5-8 off (bar 6 bug)")
 check(W.cvars.nameplateMaxDistance == "41" and W.cvars.questPOI == "0", "per-character settings")
 check(W.setLayout == 3, "Edit Mode switched to 'main' (index 3)")
 check(W.saved == nil, "binds left alone when file survived")
