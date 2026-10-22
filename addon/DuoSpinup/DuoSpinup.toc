@@ -1,0 +1,10 @@
+## Interface: 16001
+## Title: DuoSpinup
+## Notes: /spinup leader | follower — binds, bars, macros, settings for the duo
+## Author: Mac
+## Version: 0.1.0
+## SavedVariables: DuoSpinupDB
+## SavedVariablesPerCharacter: DuoSpinupCharDB
+
+Data.lua
+DuoSpinup.lua
