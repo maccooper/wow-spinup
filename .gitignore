@@ -1,0 +1,7 @@
+# local backups made by install.sh
+backups/
+*.zip
+# WoW junk
+*.bak
+*.old
+cache.md5
