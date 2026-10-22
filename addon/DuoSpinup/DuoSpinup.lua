@@ -169,38 +169,11 @@ local function Apply()
     say("set up this character: %s", table.concat(results, ", "))
 end
 
--- ---------------------------------------------------------------- shared quests
--- Always accept quests a party member shares (or escorts they start). NPC quests
--- are left to RXP, which only auto-accepts the ones on your guide step.
--- Hold Shift to skip.
-
-local function FromPartyMember(unit)
-    return UnitIsPlayer(unit) and (UnitInParty(unit) or UnitInRaid(unit))
-end
-
-local function OnQuestDetail()
-    if not D.autoAcceptShared or IsShiftKeyDown() or not FromPartyMember("questnpc") then return end
-    AcceptQuest()
-    say("accepted shared quest: %s", GetTitleText() or "?")
-end
-
-local function OnQuestAcceptConfirm(starter, title)
-    -- Escort prompts also come from strangers nearby; only take party members'.
-    if not D.autoAcceptShared or IsShiftKeyDown() or not starter
-        or not (UnitInParty(starter) or UnitInRaid(starter)) then return end
-    ConfirmAcceptQuest()
-    say("joined %s's escort: %s", tostring(starter), tostring(title))
-end
-
 -- ---------------------------------------------------------------- events
 
 local f = CreateFrame("Frame")
-f:SetScript("OnEvent", function(_, event, arg1, arg2)
-    if event == "QUEST_DETAIL" then
-        OnQuestDetail()
-    elseif event == "QUEST_ACCEPT_CONFIRM" then
-        OnQuestAcceptConfirm(arg1, arg2)
-    elseif event == "ADDON_LOADED" then
+f:SetScript("OnEvent", function(_, event, arg1)
+    if event == "ADDON_LOADED" then
         if arg1 == ADDON then
             DuoSpinupCharDB = DuoSpinupCharDB or {}
             firstRun = not DuoSpinupCharDB.done
@@ -221,8 +194,6 @@ end)
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
-f:RegisterEvent("QUEST_DETAIL")
-f:RegisterEvent("QUEST_ACCEPT_CONFIRM")
 
 -- ---------------------------------------------------------------- slash
 

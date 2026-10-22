@@ -20,10 +20,6 @@ D.cvars = {
 --                bar2  bar3  bar4  bar5   bar6   bar7   bar8
 D.actionBars = { true, true, true, false, false, false, false }
 
--- Always auto-accept quests shared by a party member (hold Shift to skip).
--- NPC quests: RXP auto-accepts only the ones on your current guide step.
-D.autoAcceptShared = true
-
 -- Edit Mode layout to switch to (lives in edit-mode-cache-account.txt).
 D.editModeLayout = "main"
 

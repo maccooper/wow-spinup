@@ -50,9 +50,11 @@ Dropped: Leatrix Plus (every feature was switched off in Kaniken's settings), Sp
 
 ## Quests
 
-- Shared by a party member (or a party member's escort): always auto-accepted by DuoSpinup. Hold Shift to skip.
-- From an NPC and on your current RXP guide step: auto-accepted by RXP.
-- From an NPC and not on your route: normal click, so your log stays clean.
+All RXP, no code of ours (both settings are in the Duo profile / RXP defaults):
+- Leader accepts a guide quest -> RXP shares it with the group ("Automatic quest sharing").
+- Follower gets a shared quest that's in its guide -> RXP accepts it (quest automation).
+- Off route: nothing automatic, so your log stays clean. Going off route for a while?
+  Tick Questie -> Auto -> "Auto Accept Quests" on the follower; it then takes everything.
 
 ## Ban safety
 

@@ -35,15 +35,6 @@ function GetMacroIndexByName(n) for i, m in ipairs(W.macros) do if m.name == n t
 function CreateMacro(n, icon, body) W.macros[#W.macros + 1] = { name = n, icon = icon, body = body } return #W.macros end
 C_Timer = { After = function(_, fn) W.timers[#W.timers + 1] = fn end }
 
--- quests: Q.giver = "npc" | "partymember" | "stranger"
-local Q = { giver = "npc", shift = false, accepted = 0, confirmed = 0, party = { ["Summer Bass"] = true } }
-function UnitIsPlayer(u) return u == "questnpc" and Q.giver ~= "npc" end
-function UnitInParty(u) return (u == "questnpc" and Q.giver == "partymember") or Q.party[u] or false end
-function UnitInRaid() return nil end
-function IsShiftKeyDown() return Q.shift end
-function AcceptQuest() Q.accepted = Q.accepted + 1 end
-function ConfirmAcceptQuest() Q.confirmed = Q.confirmed + 1 end
-function GetTitleText() return "The Escape" end
 C_EditMode = {
     GetLayouts = function() return { activeLayout = W.activeLayout, layouts = W.layouts } end,
     SetActiveLayout = function(i) W.activeLayout = i; W.setLayout = i end,
@@ -184,22 +175,6 @@ check(lastLog():find("done on this character"), "status")
 W.bars = nil
 SlashCmdList.DUOSPINUP("redo")
 check(W.bars ~= nil and lastLog():find("after /reload"), "redo re-applies, says bars need reload")
-
-realprint("shared quests")
-Login({ charDB = { done = true } })
-Q.giver = "npc"; Fire("QUEST_DETAIL")
-check(Q.accepted == 0, "NPC quest not accepted (left to RXP)")
-Q.giver = "stranger"; Fire("QUEST_DETAIL")
-check(Q.accepted == 0, "quest from non-party player not accepted")
-Q.giver = "partymember"; Fire("QUEST_DETAIL")
-check(Q.accepted == 1 and lastLog():find("accepted shared quest: The Escape"), "party-shared quest accepted")
-Q.shift = true; Fire("QUEST_DETAIL")
-check(Q.accepted == 1, "Shift skips auto-accept")
-Q.shift = false
-Fire("QUEST_ACCEPT_CONFIRM", "Random Stranger", "Escort")
-check(Q.confirmed == 0, "stranger's escort not joined")
-Fire("QUEST_ACCEPT_CONFIRM", "Summer Bass", "Escort")
-check(Q.confirmed == 1, "party member's escort joined")
 
 realprint(failures == 0 and "ALL PASS" or (failures .. " FAILURE(S)"))
 if failures > 0 then error("tests failed") end
