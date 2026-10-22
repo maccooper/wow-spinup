@@ -1,47 +1,58 @@
 # wow-spinup
 
-Turn a clean WoW Forever install into a ready-to-quest duo (leader + follower) in a couple of minutes.
+Turn a clean WoW Forever install into a ready-to-quest duo (rogue leader + druid follower) in a couple of minutes.
 
 ## Launch-day flow
 
 ```
-1. git pull                          # grab latest
-2. ./scripts/install.sh              # game CLOSED: copies addons + settings into _forever_
-3. Launch both clients, create both characters, enter world
-4. Leader client:    /spinup leader
-   Follower client:  /spinup follower
-5. Invite → group. Partner names fill into macros automatically. Go quest.
+1. git pull
+2. Close WoW. Double-click install.cmd           (or: install.cmd -Clean to also wipe junk/old addons)
+3. Make sure Questie, QuestieDB, RXPGuides (latest) and RXPGuides_Custom are in AddOns. install tells you what's missing.
+4. Launch both clients, create both characters, enter world
+5. Rogue:  /spinup leader     Druid:  /spinup follower      -> click Reload when asked
+6. Invite -> group. Partner name fills into the macros automatically. Go.
 ```
 
-Step 4 runs in-game on purpose. While WoW is running it owns its own files and
-overwrites them on logout or `/reload`. A script run from outside can't change a
-logged-in character, but an addon can.
+Beta/testing: `install.cmd -Flavor _classic_beta_`
 
-## Layout
+## In-game commands
 
-| Path | What | Runs |
-|---|---|---|
-| `golden/AddOns/` | Exact addon set (RXP, Questie, Leatrix, Details, custom guide) | copied by install |
-| `golden/WTF/` | `Config.wtf` + account-wide addon settings (SavedVariables) | copied by install |
-| `addon/DuoSpinup/` | Our addon: `/spinup leader\|follower` sets bars, macros, binds; fills partner names from party; places new spells as you learn them | in-game |
-| `scripts/install.sh` | Backup, then copy `golden/` + `addon/` into the WoW folder | game closed |
+| Command | Does |
+|---|---|
+| `/spinup leader` / `/spinup follower` | Binds, game settings, macros, action bars, RXP "Duo" profile |
+| `/spinup partner First Last` | Set partner by hand (normally automatic from your party) |
+| `/spinup partner` | Back to automatic |
+| `/spinup capture` | Record this character's bars (to build a layout). /reload after so it saves. |
+| `/spinup status` / `off` / `on` | Check state / stop or resume auto bar placement |
 
-## What lives where (why this split)
+After spinup, new spells go into their planned slot as you learn them. Higher ranks replace lower ones in our slots.
+The addon never overwrites a slot you filled yourself.
 
-- **Files (install script):** addons, addon options, graphics/sound/camera settings.
-- **In-game (DuoSpinup):** action bars (stored on Blizzard's servers, not in any file),
-  macros and keybinds (synced with the server, so files may get overwritten),
-  anything that depends on character names.
+## Files
+
+| Path | What |
+|---|---|
+| `addon/DuoSpinup/Data.lua` | **The setup**: binds, game settings, macros, RXP settings, bar layouts per class. Edit this. |
+| `addon/DuoSpinup/DuoSpinup.lua` | The addon logic |
+| `golden/Config.wtf` | Safe graphics/sound settings, merged into the live Config.wtf (never portal/account lines) |
+| `scripts/install.ps1` | Backup WTF -> install DuoSpinup -> merge Config.wtf -> check addons |
+| `tests/` | Runs the addon against a fake WoW API: `cd tests && go run . addon_test.lua` |
+
+## Addons
+
+Kept: Questie, QuestieDB, RXPGuides, RXPGuides_Custom (github.com/maccooper/RXPGuides_Custom).
+Dropped: Leatrix Plus, SpeedrunSplits, Details. RXP's quest automation and junk selling cover the parts of Leatrix you used.
 
 ## Ban safety
 
-The install script only copies files while the game is closed. DuoSpinup uses
-only the standard addon API (`CreateMacro`, `SetBinding`, `PlaceAction`,
-`SetCVar`), out of combat. It never sends keypresses and never reads game memory.
+install only copies files while the game is closed. DuoSpinup only calls the standard addon API
+(`SetBinding`, `CreateMacro`, `PlaceAction`, `SetCVar`), never in combat, and only when you type a command or learn a spell.
+It doesn't send keypresses and doesn't automate gameplay.
 
 ## Status
 
-- [ ] Capture current setup into `golden/`
-- [ ] `install.sh`
-- [ ] DuoSpinup addon
-- [ ] Test on a wiped copy of `_forever_` / on beta
+- [x] Binds, settings, macros, RXP profile from Kaniken-Justatest
+- [x] install script + addon, tested against fakes
+- [ ] Rogue bar layout: `/spinup capture` on Kaniken (beta)
+- [ ] Druid bar layout: build together
+- [ ] Real test on beta: fresh characters, check server sync doesn't undo binds/macros
