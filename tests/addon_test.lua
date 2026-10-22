@@ -120,7 +120,16 @@ check(rxpdb.current == "Duo" and RXPSettings.profiles.Duo.autoSellJunk, "RXP Duo
 check(RXPSettings.profiles.Duo.framePositions ~= ns.data.rxpProfile.framePositions, "RXP profile deep-copied")
 check(W.popups[1] == "DUOSPINUP_RELOAD", "reload prompt shown")
 
-realprint("group with partner")
+realprint("3-person group before pairing")
+W.group.party1, W.group.party2 = "Random Person", "Other Person"
+local realNum = GetNumGroupMembers
+GetNumGroupMembers = function() return 3 end
+Fire("GROUP_ROSTER_UPDATE")
+check(DuoSpinupCharDB.partner == nil, "3-person group doesn't set partner")
+GetNumGroupMembers = realNum
+W.group.party2 = nil
+
+realprint("first 2-person group locks partner")
 W.group.party1 = "Summer Bass"
 Fire("GROUP_ROSTER_UPDATE")
 check(DuoSpinupCharDB.partner == "Summer Bass", "partner from party")
@@ -140,12 +149,24 @@ W.combat = false
 Fire("PLAYER_REGEN_ENABLED")
 check(W.actions[3] and W.actions[3][2] == 53, "placed after combat")
 
-realprint("manual partner + off")
+realprint("lock holds")
+W.group.party1 = "Some Stranger"
+Fire("GROUP_ROSTER_UPDATE")
+check(DuoSpinupCharDB.partner == "Summer Bass", "duo with stranger doesn't change partner")
+check(W.macros[GetMacroIndexByName("DS Target")].body == "/target Summer Bass", "macros still target partner")
+W.group.party1 = nil
+Fire("PLAYER_LOGIN")
+check(DuoSpinupCharDB.partner == "Summer Bass", "lock survives relog")
+
+realprint("manual change + clear")
 slash("partner Winter Squid")
 check(W.macros[GetMacroIndexByName("DS Target")].body == "/target Winter Squid", "manual partner")
-W.group.party1 = "Someone Else"
+slash("partner")
+check(DuoSpinupCharDB.partner == nil, "partner cleared")
+W.group.party1 = "Summer Bass"
 Fire("GROUP_ROSTER_UPDATE")
-check(DuoSpinupCharDB.partner == "Winter Squid", "manual partner not overwritten by party")
+check(DuoSpinupCharDB.partner == "Summer Bass", "re-detected after clear")
+slash("partner Winter Squid")
 slash("off")
 W.known["Pick Pocket"] = 921
 Fire("SPELLS_CHANGED")

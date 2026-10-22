@@ -1,6 +1,6 @@
 -- DuoSpinup: one command per character to apply the duo setup.
 --   /spinup leader | follower   apply binds, settings, macros, bars, RXP profile
---   /spinup partner First Last  set partner name by hand (normally auto from party)
+--   /spinup partner First Last  change partner (auto-set and locked on first 2-person group)
 --   /spinup capture             record this character's action bars (for building layouts)
 --   /spinup status | off | on
 -- Uses only standard addon API, never in combat.
@@ -208,7 +208,7 @@ local function Spinup(role)
     say("%s: %d settings, %d binds, %d macros, %d bar slots (%d waiting to learn)",
         role, nC or 0, nB or 0, nM or 0, placed or 0, waiting or 0)
     if not DuoSpinupCharDB.partner then
-        say("partner name fills in when you group (or /spinup partner First Last)")
+        say("partner locks to the first person you group with (or /spinup partner First Last)")
     end
     if rxp then
         StaticPopup_Show("DUOSPINUP_RELOAD")
@@ -217,12 +217,14 @@ local function Spinup(role)
     end
 end
 
-local function SetPartner(name, manual)
+-- Partner is locked once set; only /spinup partner changes it.
+local function SetPartner(name)
     if not name or name == "" or name == DuoSpinupCharDB.partner then return end
     DuoSpinupCharDB.partner = name
-    DuoSpinupCharDB.partnerManual = manual or nil
     Run(function()
-        if Step("macros", ApplyMacros) then say("partner set: %s", name) end
+        if Step("macros", ApplyMacros) then
+            say("partner locked: %s (change with /spinup partner First Last)", name)
+        end
     end)
 end
 
@@ -259,6 +261,7 @@ local function QueueLayout()
     layoutQueued = true
     C_Timer.After(1, function()
         layoutQueued = false
+        if DuoSpinupCharDB.disabled then return end
         Run(function()
             local ok, placed = Step("bars", ApplyLayout)
             if ok and placed > 0 then say("placed %d new action(s)", placed) end
@@ -266,10 +269,11 @@ local function QueueLayout()
     end)
 end
 
+-- First 2-person group sets the partner; after that grouping never changes it.
 local function GroupChanged()
-    if DuoSpinupCharDB.partnerManual or DuoSpinupCharDB.disabled then return end
+    if DuoSpinupCharDB.partner or DuoSpinupCharDB.disabled then return end
     if IsInGroup() and GetNumGroupMembers() == 2 then
-        SetPartner(UnitName("party1"), false)
+        SetPartner(UnitName("party1"))
     end
 end
 
@@ -309,11 +313,11 @@ SlashCmdList.DUOSPINUP = function(msg)
         Run(function() Spinup(cmd) end)
     elseif cmd == "partner" then
         if rest == "" then
-            DuoSpinupCharDB.partnerManual = nil
-            say("partner back to automatic (from party)")
+            DuoSpinupCharDB.partner = nil
+            say("partner cleared: next 2-person group sets it")
             GroupChanged()
         else
-            SetPartner(rest, true)
+            SetPartner(rest)
         end
     elseif cmd == "capture" then
         Capture()

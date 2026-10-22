@@ -10,7 +10,7 @@ Turn a clean WoW Forever install into a ready-to-quest duo (rogue leader + druid
 3. Make sure Questie, QuestieDB, RXPGuides (latest) and RXPGuides_Custom are in AddOns. install tells you what's missing.
 4. Launch both clients, create both characters, enter world
 5. Rogue:  /spinup leader     Druid:  /spinup follower      -> click Reload when asked
-6. Invite -> group. Partner name fills into the macros automatically. Go.
+6. Invite -> group. Partner name fills into the macros and LOCKS (first 2-person group only). Go.
 ```
 
 Beta/testing: `install.cmd -Flavor _classic_beta_`
@@ -20,8 +20,8 @@ Beta/testing: `install.cmd -Flavor _classic_beta_`
 | Command | Does |
 |---|---|
 | `/spinup leader` / `/spinup follower` | Binds, game settings, macros, action bars, RXP "Duo" profile |
-| `/spinup partner First Last` | Set partner by hand (normally automatic from your party) |
-| `/spinup partner` | Back to automatic |
+| `/spinup partner First Last` | Change the locked partner by hand |
+| `/spinup partner` | Clear it; the next 2-person group sets and locks it again |
 | `/spinup capture` | Record this character's bars (to build a layout). /reload after so it saves. |
 | `/spinup status` / `off` / `on` | Check state / stop or resume auto bar placement |
 
