@@ -56,8 +56,8 @@ once per character, never in combat. It doesn't send keypresses or automate game
 
 ## To verify on beta
 
-- [ ] `install.cmd -Flavor _classic_beta_ -Accounts 80784825#1`, make a fresh character
-- [ ] Summary line has no red: bars on, layout main, RXP on Duo
-- [ ] Binds + layout survive (summary says "binds ok", not "restored")
-- [ ] RXP frames are where Kaniken had them without a reload
+- [x] `install.cmd -Flavor _classic_beta_ -Accounts 80784825#1`, make a fresh character
+- [x] Summary line has no red: bars on, layout main, RXP on Duo
+- [x] Binds + layout survive (summary says "binds ok", not "restored")
+- [x] RXP frames are where Kaniken had them without a reload
 - [x] Export the "main" layout string from Edit Mode into `golden/editmode-main.txt` (backup)
