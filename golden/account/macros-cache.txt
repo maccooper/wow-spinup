@@ -1,12 +1,21 @@
-VER 3 0000000000000001 "Target" "134400"
-/target party1
+VER 3 0000000000000008 "clr" "135860"
+/clearfocus
 END
-VER 3 0000000000000002 "Follow" "136138"
+VER 3 0000000000000004 "Dual" "132319"
+/castsequence Find Herbs, Find Minerals
+END
+VER 3 0000000000000002 "Follow" "965900"
 /follow party1
+END
+VER 3 0000000000000006 "set" "236188"
+/focus [@mouseover,exists][]
 END
 VER 3 0000000000000003 "Sit" "134331"
 /sit
 END
-VER 3 0000000000000004 "Dual" "132319"
-/castsequence Find Herbs, Find Minerals
+VER 3 0000000000000007 "tar" "132096"
+/target focus
+END
+VER 3 0000000000000001 "Target" "132212"
+/target party1
 END
