@@ -83,7 +83,8 @@ local function ApplyBars()
         for i = 1, #b do if b[i] then bits = bits + 2 ^ (i - 1) end end
         SetCVar("enableMultiActionBars", tostring(bits))
     end
-    if MultiActionBar_Update then MultiActionBar_Update() end
+    -- No MultiActionBar_Update() here: calling Blizzard UI code taints it
+    -- (blocked /camp). Blizzard draws the bars from these values itself.
 end
 
 local function ApplyEditMode()
@@ -146,14 +147,23 @@ local function Step(fn)
     return res
 end
 
+-- Runs at our ADDON_LOADED, before Blizzard's UI sets up the action bars,
+-- so the bars come up right without us touching Blizzard code.
+local function ApplyEarly()
+    return Step(function() ApplyCVars() ApplyBars() return "bars on" end)
+end
+
+local earlyResult
+
 local function Apply()
     local results = {
-        Step(function() ApplyCVars() ApplyBars() return "bars on" end),
+        earlyResult or Step(function() ApplyCVars() ApplyBars() return "bars on (after /reload)" end),
         Step(ApplyEditMode),
         Step(ApplyBinds),
         Step(ApplyMacros),
         Step(ApplyRXP),
     }
+    earlyResult = nil -- /spinup redo later in the session needs a reload for bars
     DuoSpinupCharDB.done = true
     DuoSpinupCharDB.results = results
     say("set up this character: %s", table.concat(results, ", "))
@@ -167,6 +177,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         if arg1 == ADDON then
             DuoSpinupCharDB = DuoSpinupCharDB or {}
             firstRun = not DuoSpinupCharDB.done
+            if firstRun then earlyResult = ApplyEarly() end
         elseif arg1 == "RXPGuides" and firstRun then
             pcall(PrepareRXP)
         end

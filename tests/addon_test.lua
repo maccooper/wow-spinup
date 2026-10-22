@@ -29,7 +29,7 @@ function SetBinding(k, a) W.bindings[k] = a; return true end
 function SaveBindings(set) W.saved = set end
 MultiBar5 = {} -- this client has 8 bars
 function SetActionBarToggles(...) W.bars = { ... } end
-function MultiActionBar_Update() end
+function MultiActionBar_Update() error("addon called Blizzard UI code (taint: blocks /camp)") end
 function InCombatLockdown() return W.combat end
 function GetMacroIndexByName(n) for i, m in ipairs(W.macros) do if m.name == n then return i end end return 0 end
 function CreateMacro(n, icon, body) W.macros[#W.macros + 1] = { name = n, icon = icon, body = body } return #W.macros end
@@ -80,6 +80,7 @@ local function Login(opts)
     assert(loadfile(ADDON_DIR .. "Data.lua"))("DuoSpinup", ns)
     assert(loadfile(ADDON_DIR .. "DuoSpinup.lua"))("DuoSpinup", ns)
     Fire("ADDON_LOADED", "DuoSpinup")
+    W.barsAtLoad = W.bars
     if opts.rxpFirst then rxpDB = AceDB:New("RXPSettings", {}) end -- RXP inits before our handler
     Fire("ADDON_LOADED", "RXPGuides")
     if not opts.rxpFirst then rxpDB = AceDB:New("RXPSettings", {}) end
@@ -110,6 +111,7 @@ check(RXPSettings.profiles.Duo.autoSellJunk and RXPSettings.profiles.Duo.framePo
 check(AceDB:New("Other", {}).keys.profile ~= "Duo", "AceDB hook removed, other addons unaffected")
 check(W.bars and W.bars[1] and W.bars[2] and W.bars[3] and not W.bars[4], "bars 2-4 on")
 check(#W.bars == 7 and not (W.bars[5] or W.bars[6] or W.bars[7]), "bars 5-8 off (bar 6 bug)")
+check(W.barsAtLoad ~= nil and W.cvars.questPOI == "0", "bars + settings set at ADDON_LOADED, before Blizzard sets up bars")
 check(W.cvars.nameplateMaxDistance == "41" and W.cvars.questPOI == "0", "per-character settings")
 check(W.setLayout == 3, "Edit Mode switched to 'main' (index 3)")
 check(W.saved == nil, "binds left alone when file survived")
@@ -140,7 +142,7 @@ reset()
 RXPSettings = { profileKeys = { ["New Char - PvE"] = "Mine" }, profiles = { Mine = {} } }
 Login({ charDB = { done = true } })
 check(rxpDB.keys.profile == "Mine", "done character untouched")
-check(W.bars == nil and W.setLayout == nil, "no settings applied to done character")
+check(W.bars == nil and W.barsAtLoad == nil and W.setLayout == nil, "no settings applied to done character")
 
 realprint("user's tweaked Duo profile isn't overwritten")
 reset()
@@ -161,17 +163,17 @@ reset()
 W.combat = true
 RXPSettings = nil
 Login()
-check(W.bars == nil, "nothing applied in combat")
+check(W.setLayout == nil and not DuoSpinupCharDB.done, "nothing applied in combat")
 W.combat = false
 Fire("PLAYER_REGEN_ENABLED")
-check(W.bars ~= nil and DuoSpinupCharDB.done, "applied after combat")
+check(W.setLayout == 3 and DuoSpinupCharDB.done, "applied after combat")
 
 realprint("slash")
 SlashCmdList.DUOSPINUP("")
 check(lastLog():find("done on this character"), "status")
 W.bars = nil
 SlashCmdList.DUOSPINUP("redo")
-check(W.bars ~= nil, "redo re-applies")
+check(W.bars ~= nil and lastLog():find("after /reload"), "redo re-applies, says bars need reload")
 
 realprint(failures == 0 and "ALL PASS" or (failures .. " FAILURE(S)"))
 if failures > 0 then error("tests failed") end
