@@ -24,6 +24,7 @@ Beta/testing: `install.cmd -Flavor _classic_beta_ -Accounts 80784825#1`
 |---|---|
 | Keybinds, Edit Mode layout "main", macros, account settings | `install` copies `golden/account/*` into accounts #2 and #3 |
 | Graphics / sound | `install` merges `golden/Config.wtf` (never portal/account lines) |
+| Leatrix Plus settings | `install` copies `golden/account/SavedVariables/Leatrix_Plus.lua` |
 | Bars on, layout "main" active, nameplate range, quest markers | DuoSpinup, on the character's first login |
 | RXP settings (automation, junk, frame positions) | DuoSpinup starts new characters on RXP profile "Duo" |
 | Binds/macros wiped by server sync | DuoSpinup notices on first login and restores them |
@@ -45,8 +46,14 @@ After the first login DuoSpinup never touches that character again. `/spinup` sh
 
 ## Addons
 
-Kept: Questie, QuestieDB, RXPGuides, RXPGuides_Custom (github.com/maccooper/RXPGuides_Custom).
-Dropped: Leatrix Plus, SpeedrunSplits, Details.
+Kept: Questie, QuestieDB, RXPGuides, RXPGuides_Custom (github.com/maccooper/RXPGuides_Custom), Leatrix Plus
+(Kaniken's settings; its quest automation is off). Dropped: SpeedrunSplits, Details.
+
+## Quests
+
+- Shared by a party member (or a party member's escort): always auto-accepted by DuoSpinup. Hold Shift to skip.
+- From an NPC and on your current RXP guide step: auto-accepted by RXP.
+- From an NPC and not on your route: normal click, so your log stays clean.
 
 ## Ban safety
 

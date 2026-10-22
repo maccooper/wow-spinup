@@ -18,8 +18,12 @@ $Wtf = Join-Path $Game "WTF"
 function Say($msg) { Write-Host "spinup: $msg" }
 
 if (-not (Test-Path $Game)) { throw "WoW folder not found: $Game" }
-if (Get-Process -Name "Wow", "WowB", "WowT" -ErrorAction SilentlyContinue) {
-    throw "WoW is running. Close every client first (it overwrites settings on exit)."
+# Only the client(s) running out of this folder matter (beta open doesn't block _forever_).
+$Running = Get-Process -Name "Wow*" -ErrorAction SilentlyContinue | Where-Object {
+    -not $_.Path -or $_.Path -like "$Game\*"
+}
+if ($Running) {
+    throw "WoW ($Flavor) is running. Close every $Flavor client first (it overwrites settings on exit)."
 }
 New-Item -ItemType Directory -Force $AddOns, $Wtf | Out-Null
 
@@ -35,7 +39,7 @@ if (Get-ChildItem $Wtf -ErrorAction SilentlyContinue) {
 
 # 2. Optional cleanup: zips, empty leftover folders, addons we dropped.
 if ($Clean) {
-    $Unwanted = @("Leatrix_Plus", "SpeedrunSplits", "Details")
+    $Unwanted = @("SpeedrunSplits", "Details")
     Get-ChildItem $AddOns -Filter *.zip | ForEach-Object { Remove-Item $_.FullName; Say "removed $($_.Name)" }
     Get-ChildItem $AddOns -Directory | Where-Object {
         $Unwanted -contains $_.Name -or -not (Get-ChildItem $_.FullName -Recurse -File -ErrorAction SilentlyContinue)
@@ -62,26 +66,32 @@ foreach ($g in $Golden) {
 Set-Content -Path $ConfigPath -Value $Lines -Encoding ASCII
 Say "merged $($Golden.Count) settings into Config.wtf"
 
-# 5. Account files: binds, Edit Mode layout, macros, account settings -> every listed account.
-$AccountFiles = Get-ChildItem (Join-Path $Repo "golden\account") -File
+# 5. Account files: binds, Edit Mode layout, macros, account settings, addon settings
+#    (golden\account\SavedVariables\*) -> every listed account, same relative paths.
+$AccountRoot = Join-Path $Repo "golden\account"
+$AccountFiles = Get-ChildItem $AccountRoot -File -Recurse
 foreach ($acct in $Accounts) {
     $dir = Join-Path $Wtf "Account\$acct"
     if (-not (Test-Path $dir)) {
         Say "WARNING: $acct has no folder yet (never logged in on this install). Creating it."
         New-Item -ItemType Directory -Force $dir | Out-Null
     }
-    foreach ($file in $AccountFiles) {
-        Copy-Item $file.FullName (Join-Path $dir $file.Name) -Force
+    $names = foreach ($file in $AccountFiles) {
+        $rel = $file.FullName.Substring($AccountRoot.Length + 1)
+        $dest = Join-Path $dir $rel
+        New-Item -ItemType Directory -Force (Split-Path -Parent $dest) | Out-Null
+        Copy-Item $file.FullName $dest -Force
+        $rel
     }
-    Say "account $acct <- $($AccountFiles.Name -join ', ')"
+    Say "account $acct <- $($names -join ', ')"
 }
 
 # 6. Check required addons.
-$Required = @("Questie", "QuestieDB", "RXPGuides", "RXPGuides_Custom")
+$Required = @("Questie", "QuestieDB", "RXPGuides", "RXPGuides_Custom", "Leatrix_Plus")
 $Missing = $Required | Where-Object { -not (Test-Path (Join-Path $AddOns "$_\$_*.toc")) }
 if ($Missing) {
     Say "MISSING addons: $($Missing -join ', ')"
-    Say "  Questie/QuestieDB/RXPGuides: latest from CurseForge/GitHub into $AddOns"
+    Say "  Questie/QuestieDB/RXPGuides/Leatrix_Plus: latest from CurseForge/GitHub into $AddOns"
     Say "  RXPGuides_Custom: git clone git@github.com:maccooper/RXPGuides_Custom.git into $AddOns"
 } else {
     Say "required addons present: $($Required -join ', ')"
