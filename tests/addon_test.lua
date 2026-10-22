@@ -1,67 +1,67 @@
 -- Runs DuoSpinup against a fake WoW API. From the repo root:
 --   cd tests && go run . addon_test.lua
 local ADDON_DIR = "../addon/DuoSpinup/"
+local realprint = function(s) io.write(s, "\n") end
 
--- ------------------------------------------------------------ fake WoW state
-local W = {
-    cvars = {}, binds = {}, saved = 0, actions = {}, macros = {}, cursor = nil,
-    combat = false, group = {}, timers = {}, popups = {}, reloads = 0, bars = nil,
-    log = {},
-    known = { -- name -> highest known spell id
-        ["Sinister Strike"] = 1757, ["Eviscerate"] = 6760, ["Stealth"] = 1784,
-    },
-    names = { [1752] = "Sinister Strike", [1757] = "Sinister Strike", [2098] = "Eviscerate",
-        [6760] = "Eviscerate", [1784] = "Stealth", [53] = "Backstab", [921] = "Pick Pocket" },
-}
-local ids = { ["Sinister Strike"] = 1757, Eviscerate = 6760, Stealth = 1784, Backstab = 53, ["Pick Pocket"] = 921 }
+-- ------------------------------------------------------------ fake WoW
+local W
 
-function print(...) local t = {} for i = 1, select("#", ...) do t[#t + 1] = tostring(select(i, ...)) end
-    W.log[#W.log + 1] = table.concat(t, " ") end
-local realprint = _G.io and function(s) io.write(s, "\n") end
+local function reset()
+    W = {
+        cvars = {}, bindings = {}, saved = nil, macros = {}, combat = false, timers = {},
+        bars = nil, log = {}, activeLayout = 1, setLayout = nil,
+        layouts = { { layoutName = "main" } },
+    }
+end
+
+function print(...)
+    local t = {}
+    for i = 1, select("#", ...) do t[#t + 1] = tostring(select(i, ...)) end
+    W.log[#W.log + 1] = table.concat(t, " ")
+end
 
 ACCOUNT_BINDINGS = 1
 SlashCmdList = {}
-StaticPopupDialogs = {}
-function StaticPopup_Show(n) W.popups[#W.popups + 1] = n end
-function ReloadUI() W.reloads = W.reloads + 1 end
+Enum = { EditModePresetLayoutsMeta = { NumValues = 2 } }
 function SetCVar(k, v) W.cvars[k] = v end
-function SetBinding(k, a) W.binds[k] = a or "UNBOUND"; return true end
+function GetBindingAction(k) return W.bindings[k] or "" end
+function SetBinding(k, a) W.bindings[k] = a; return true end
 function SaveBindings(set) W.saved = set end
 function SetActionBarToggles(a, b, c, d) W.bars = { a, b, c, d } end
 function MultiActionBar_Update() end
 function InCombatLockdown() return W.combat end
-function UnitClass() return "Rogue", "ROGUE" end
-function UnitName(u) if u == "player" then return "Kaniken" end return W.group[u] end
-function IsInGroup() return W.group.party1 ~= nil end
-function GetNumGroupMembers() return W.group.party1 and 2 or 0 end
-C_Timer = { After = function(_, fn) W.timers[#W.timers + 1] = fn end }
-C_Spell = {
-    GetSpellInfo = function(x)
-        local id = type(x) == "number" and x or (W.known[x] or ids[x])
-        if not id or not W.names[id] then return nil end
-        return { name = W.names[id], spellID = id }
-    end,
-    PickupSpell = function(id) W.cursor = { "spell", id } end,
-}
-function IsPlayerSpell(id) for _, k in pairs(W.known) do if k == id then return true end end return false end
-C_Item = { GetItemCount = function() return 0 end, GetItemNameByID = function() return "Item" end }
-function GetCursorInfo() return W.cursor and W.cursor[1] end
-function ClearCursor() W.cursor = nil end
-function PlaceAction(slot) local old = W.actions[slot]; W.actions[slot] = W.cursor; W.cursor = old end
-function GetActionInfo(slot) local a = W.actions[slot] if a then return a[1], a[2] end end
 function GetMacroIndexByName(n) for i, m in ipairs(W.macros) do if m.name == n then return i end end return 0 end
 function CreateMacro(n, icon, body) W.macros[#W.macros + 1] = { name = n, icon = icon, body = body } return #W.macros end
-function EditMacro(i, n, icon, body) W.macros[i] = { name = n, icon = icon, body = body } end
-function GetMacroInfo(i) local m = W.macros[i] return m.name, m.icon, m.body end
-function PickupMacro(i) W.cursor = { "macro", i } end
-function PickupItem(id) W.cursor = { "item", id } end
+C_Timer = { After = function(_, fn) W.timers[#W.timers + 1] = fn end }
+C_EditMode = {
+    GetLayouts = function() return { activeLayout = W.activeLayout, layouts = W.layouts } end,
+    SetActiveLayout = function(i) W.activeLayout = i; W.setLayout = i end,
+}
 
-local knownEvents = { ADDON_LOADED = 1, PLAYER_LOGIN = 1, PLAYER_REGEN_ENABLED = 1, GROUP_ROSTER_UPDATE = 1,
-    SPELLS_CHANGED = 1, LEARNED_SPELL_IN_TAB = 1, BAG_UPDATE_DELAYED = 1 } -- no LEARNED_SPELL_IN_SKILL_LINE
-local frames = {}
+-- Fake AceDB: New() picks the char's saved profile, else defaultProfile, else char key.
+local AceDB = { db_registry = {} }
+function AceDB:New(tbl, defaults, defaultProfile)
+    local sv = type(tbl) == "string" and (_G[tbl] or {}) or tbl
+    if type(tbl) == "string" then _G[tbl] = sv end
+    sv.profileKeys = sv.profileKeys or {}
+    sv.profiles = sv.profiles or {}
+    local key = "New Char - PvE"
+    local profile = sv.profileKeys[key] or (type(defaultProfile) == "string" and defaultProfile) or key
+    sv.profileKeys[key] = profile
+    local db = { sv = sv, keys = { profile = profile } }
+    function db:SetProfile(n) self.keys.profile = n; self.sv.profileKeys[key] = n end
+    self.db_registry[db] = true
+    return db
+end
+function LibStub(name) if name == "AceDB-3.0" then return AceDB end end
+
+-- "Loads" the addon + RXP the way the client does: our files, then RXP's
+-- ADDON_LOADED (RXP calls AceDB:New after our handler), then entering world.
+local frames
 function CreateFrame()
     local f = { events = {} }
-    function f:RegisterEvent(e) if not knownEvents[e] then error("unknown event " .. e) end self.events[e] = true end
+    function f:RegisterEvent(e) self.events[e] = true end
+    function f:UnregisterEvent(e) self.events[e] = nil end
     function f:SetScript(_, fn) self.handler = fn end
     frames[#frames + 1] = f
     return f
@@ -69,128 +69,107 @@ end
 local function Fire(e, ...) for _, f in ipairs(frames) do if f.events[e] then f.handler(f, e, ...) end end end
 local function Flush() local t = W.timers W.timers = {} for _, fn in ipairs(t) do fn() end end
 
--- fake RXP + AceDB
-RXPSettings = { profileKeys = { ["Kaniken Justatest"] = "Kaniken Justatest" }, profiles = {} }
-local rxpdb = { sv = RXPSettings }
-function rxpdb:SetProfile(n) self.current = n end
-local AceDB = { db_registry = { [rxpdb] = true } }
-function LibStub(name) if name == "AceDB-3.0" then return AceDB end end
-
--- ------------------------------------------------------------ load addon
-local ns = {}
-assert(loadfile(ADDON_DIR .. "Data.lua"))("DuoSpinup", ns)
-assert(loadfile(ADDON_DIR .. "DuoSpinup.lua"))("DuoSpinup", ns)
-ns.data.layouts.ROGUE = {
-    [1] = { spell = "Sinister Strike" }, [2] = { spell = "Eviscerate" }, [3] = { spell = "Backstab" },
-    [10] = { macro = "DS Target" }, [11] = { macro = "DS Follow" }, [12] = { item = 6948 },
-    [73] = { spell = "Pick Pocket" },
-}
+local rxpDB
+local function Login(opts)
+    opts = opts or {}
+    frames = {}
+    AceDB.db_registry = {}
+    DuoSpinupCharDB = opts.charDB
+    local ns = {}
+    assert(loadfile(ADDON_DIR .. "Data.lua"))("DuoSpinup", ns)
+    assert(loadfile(ADDON_DIR .. "DuoSpinup.lua"))("DuoSpinup", ns)
+    Fire("ADDON_LOADED", "DuoSpinup")
+    if opts.rxpFirst then rxpDB = AceDB:New("RXPSettings", {}) end -- RXP inits before our handler
+    Fire("ADDON_LOADED", "RXPGuides")
+    if not opts.rxpFirst then rxpDB = AceDB:New("RXPSettings", {}) end
+    Fire("PLAYER_ENTERING_WORLD")
+    Flush()
+    return ns
+end
 
 local failures = 0
 local function check(cond, msg)
     if not cond then failures = failures + 1; realprint("  FAIL " .. msg) else realprint("  ok   " .. msg) end
 end
-local function slash(s) SlashCmdList.DUOSPINUP(s) end
+local function lastLog() return W.log[#W.log] or "" end
 
 -- ------------------------------------------------------------ tests
-realprint("login")
-Fire("ADDON_LOADED", "DuoSpinup")
-Fire("PLAYER_LOGIN")
-check(DuoSpinupCharDB and DuoSpinupDB, "saved vars created")
-check(W.log[#W.log]:find("/spinup leader"), "new character hint printed")
+realprint("fresh install, first login, files copied fine")
+reset()
+local D = {}
+assert(loadfile(ADDON_DIR .. "Data.lua"))("DuoSpinup", D)
+D = D.data
+-- What the client loads from the copied bindings/macros files:
+for _, kv in ipairs(D.binds) do W.bindings[kv[1]] = kv[2] ~= "NONE" and kv[2] or nil end
+for _, m in ipairs(D.macros) do CreateMacro(m.name, m.icon, m.body) end
+RXPSettings = nil
+Login()
+check(rxpDB.keys.profile == "Duo", "RXP starts on Duo at load (no reload)")
+check(RXPSettings.profiles.Duo.autoSellJunk and RXPSettings.profiles.Duo.framePositions.RXPFrame, "Duo profile has Kaniken settings")
+check(AceDB:New("Other", {}).keys.profile ~= "Duo", "AceDB hook removed, other addons unaffected")
+check(W.bars and W.bars[1] and W.bars[2] and W.bars[3] and not W.bars[4], "bars on")
+check(W.cvars.nameplateMaxDistance == "41" and W.cvars.questPOI == "0", "per-character settings")
+check(W.setLayout == 3, "Edit Mode switched to 'main' (index 3)")
+check(W.saved == nil, "binds left alone when file survived")
+check(#W.macros == 4, "no duplicate macros")
+check(DuoSpinupCharDB.done, "marked done")
+check(lastLog():find("set up this character") and not lastLog():find("failed"), "one summary line, no errors: " .. lastLog())
 
-realprint("/spinup leader (no partner yet)")
-W.actions[1] = { "spell", 1752 } -- rank 1 Sinister Strike already on bar
-W.actions[2] = { "spell", 9999 } -- something else the player put there
-slash("leader")
-check(DuoSpinupCharDB.role == "leader", "role saved")
-check(W.cvars.showSwingTimer == "1" and W.cvars.questPOI == "0", "cvars set")
-check(W.binds.E == "ACTIONBUTTON11" and W.binds["7"] == "UNBOUND", "binds set / unbound")
-check(W.binds["ALT--"] == "CLICK RXPInventory_DeleteJunk:LeftButton", "click bind")
-check(W.saved == 1, "binds saved account-wide")
-check(W.bars and W.bars[1] and W.bars[3] and not W.bars[4], "bars toggled")
-local t = W.macros[GetMacroIndexByName("DS Target")]
-check(t and t.body == "/target", "target macro valid without partner: " .. tostring(t and t.body))
-check(W.actions[1][2] == 1757, "spell rank upgraded on bar")
-check(W.actions[2][2] == 9999, "player's own action left alone")
-check(W.actions[3] == nil, "unlearned Backstab skipped")
-check(W.actions[10] and W.actions[10][1] == "macro", "macro placed")
-check(W.actions[12] == nil, "item not in bags skipped")
-check(rxpdb.current == "Duo" and RXPSettings.profiles.Duo.autoSellJunk, "RXP Duo profile selected")
-check(RXPSettings.profiles.Duo.framePositions ~= ns.data.rxpProfile.framePositions, "RXP profile deep-copied")
-check(W.popups[1] == "DUOSPINUP_RELOAD", "reload prompt shown")
+realprint("server sync wiped binds + macros")
+reset()
+W.bindings = { E = "MOVEFORWARD" }
+RXPSettings = nil
+Login()
+check(W.bindings.Z == "ACTIONBUTTON7" and W.bindings["7"] == nil and W.bindings.E == "ACTIONBUTTON11", "binds restored")
+check(W.bindings["ALT--"] == "CLICK RXPInventory_DeleteJunk:LeftButton", "click bind restored")
+check(W.saved == 1, "saved account-wide")
+check(#W.macros == 4 and W.macros[GetMacroIndexByName("Target")].body == "/target party1", "macros recreated")
+check(lastLog():find("binds restored"), "summary says binds restored")
 
-realprint("3-person group before pairing")
-W.group.party1, W.group.party2 = "Random Person", "Other Person"
-local realNum = GetNumGroupMembers
-GetNumGroupMembers = function() return 3 end
-Fire("GROUP_ROSTER_UPDATE")
-check(DuoSpinupCharDB.partner == nil, "3-person group doesn't set partner")
-GetNumGroupMembers = realNum
-W.group.party2 = nil
+realprint("RXP set up its database before us (load order)")
+reset()
+RXPSettings = nil
+Login({ rxpFirst = true })
+check(rxpDB.keys.profile == "Duo", "fallback switches RXP to Duo live")
+check(AceDB:New("Other", {}).keys.profile ~= "Duo", "hook cleaned up")
 
-realprint("first 2-person group locks partner")
-W.group.party1 = "Summer Bass"
-Fire("GROUP_ROSTER_UPDATE")
-check(DuoSpinupCharDB.partner == "Summer Bass", "partner from party")
-check(W.macros[GetMacroIndexByName("DS Target")].body == "/target Summer Bass", "target macro filled")
-check(W.macros[GetMacroIndexByName("DS Follow")].body == "/follow Summer Bass", "follow macro filled")
-check(#W.macros == 4, "no duplicate macros (" .. #W.macros .. ")")
+realprint("existing character keeps its own RXP profile at load")
+reset()
+RXPSettings = { profileKeys = { ["New Char - PvE"] = "Mine" }, profiles = { Mine = {} } }
+Login({ charDB = { done = true } })
+check(rxpDB.keys.profile == "Mine", "done character untouched")
+check(W.bars == nil and W.setLayout == nil, "no settings applied to done character")
 
-realprint("learn Backstab in combat")
+realprint("user's tweaked Duo profile isn't overwritten")
+reset()
+RXPSettings = { profiles = { Duo = { autoSellJunk = false } } }
+Login()
+check(RXPSettings.profiles.Duo.autoSellJunk == false, "existing Duo kept")
+
+realprint("missing Edit Mode layout")
+reset()
+W.layouts = {}
+RXPSettings = nil
+Login()
+check(lastLog():find("not found"), "says layout not found")
+check(W.bars ~= nil, "everything else still applied")
+
+realprint("first login in combat")
+reset()
 W.combat = true
-W.known.Backstab = 53
-Fire("SPELLS_CHANGED")
-Fire("LEARNED_SPELL_IN_TAB")
-check(#W.timers == 1, "learn events throttled to one timer")
-Flush()
-check(W.actions[3] == nil, "not placed during combat")
+RXPSettings = nil
+Login()
+check(W.bars == nil, "nothing applied in combat")
 W.combat = false
 Fire("PLAYER_REGEN_ENABLED")
-check(W.actions[3] and W.actions[3][2] == 53, "placed after combat")
+check(W.bars ~= nil and DuoSpinupCharDB.done, "applied after combat")
 
-realprint("lock holds")
-W.group.party1 = "Some Stranger"
-Fire("GROUP_ROSTER_UPDATE")
-check(DuoSpinupCharDB.partner == "Summer Bass", "duo with stranger doesn't change partner")
-check(W.macros[GetMacroIndexByName("DS Target")].body == "/target Summer Bass", "macros still target partner")
-W.group.party1 = nil
-Fire("PLAYER_LOGIN")
-check(DuoSpinupCharDB.partner == "Summer Bass", "lock survives relog")
+realprint("slash")
+SlashCmdList.DUOSPINUP("")
+check(lastLog():find("done on this character"), "status")
+W.bars = nil
+SlashCmdList.DUOSPINUP("redo")
+check(W.bars ~= nil, "redo re-applies")
 
-realprint("manual change + clear")
-slash("partner Winter Squid")
-check(W.macros[GetMacroIndexByName("DS Target")].body == "/target Winter Squid", "manual partner")
-slash("partner")
-check(DuoSpinupCharDB.partner == nil, "partner cleared")
-W.group.party1 = "Summer Bass"
-Fire("GROUP_ROSTER_UPDATE")
-check(DuoSpinupCharDB.partner == "Summer Bass", "re-detected after clear")
-slash("partner Winter Squid")
-slash("off")
-W.known["Pick Pocket"] = 921
-Fire("SPELLS_CHANGED")
-Flush()
-check(W.actions[73] == nil, "off: nothing placed")
-slash("on")
-Flush()
-check(W.actions[73] and W.actions[73][2] == 921, "on: placed")
-
-realprint("capture + status")
-slash("capture")
-local cap = DuoSpinupDB.captures["Kaniken ROGUE"]
-check(cap and cap[1].spell == "Sinister Strike" and cap[10].macro == "DS Target", "capture recorded")
-check(cap[10].body == "/target Winter Squid", "capture includes macro body")
-slash("status")
-check(W.log[#W.log]:find("role=leader"), "status prints")
-slash("")
-check(W.log[#W.log]:find("/spinup leader | follower"), "help prints")
-
-realprint("idempotent re-run")
-local before = #W.macros
-slash("leader")
-check(#W.macros == before, "re-run makes no new macros")
-
-for _, l in ipairs(W.log) do if l:find("failed") then failures = failures + 1; realprint("  FAIL addon error: " .. l) end end
 realprint(failures == 0 and "ALL PASS" or (failures .. " FAILURE(S)"))
 if failures > 0 then error("tests failed") end

@@ -1,0 +1,12 @@
+VER 3 0000000000000001 "Target" "134400"
+/target party1
+END
+VER 3 0000000000000002 "Follow" "136138"
+/follow party1
+END
+VER 3 0000000000000003 "Sit" "134331"
+/sit
+END
+VER 3 0000000000000004 "Dual" "132319"
+/castsequence Find Herbs, Find Minerals
+END

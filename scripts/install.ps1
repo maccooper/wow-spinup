@@ -2,9 +2,11 @@
 #   .\scripts\install.ps1                      # _forever_
 #   .\scripts\install.ps1 -Flavor _classic_beta_
 #   .\scripts\install.ps1 -Clean               # also remove junk + unwanted addons
+#   .\scripts\install.ps1 -Accounts "80784825#1"   # which WTF\Account folders get the account files
 param(
     [string]$Flavor = "_forever_",
     [string]$WowRoot = "C:\Program Files (x86)\World of Warcraft",
+    [string[]]$Accounts = @("80784825#2", "80784825#3"),
     [switch]$Clean
 )
 $ErrorActionPreference = "Stop"
@@ -60,7 +62,21 @@ foreach ($g in $Golden) {
 Set-Content -Path $ConfigPath -Value $Lines -Encoding ASCII
 Say "merged $($Golden.Count) settings into Config.wtf"
 
-# 5. Check required addons.
+# 5. Account files: binds, Edit Mode layout, macros, account settings -> every listed account.
+$AccountFiles = Get-ChildItem (Join-Path $Repo "golden\account") -File
+foreach ($acct in $Accounts) {
+    $dir = Join-Path $Wtf "Account\$acct"
+    if (-not (Test-Path $dir)) {
+        Say "WARNING: $acct has no folder yet (never logged in on this install). Creating it."
+        New-Item -ItemType Directory -Force $dir | Out-Null
+    }
+    foreach ($file in $AccountFiles) {
+        Copy-Item $file.FullName (Join-Path $dir $file.Name) -Force
+    }
+    Say "account $acct <- $($AccountFiles.Name -join ', ')"
+}
+
+# 6. Check required addons.
 $Required = @("Questie", "QuestieDB", "RXPGuides", "RXPGuides_Custom")
 $Missing = $Required | Where-Object { -not (Test-Path (Join-Path $AddOns "$_\$_*.toc")) }
 if ($Missing) {
@@ -71,4 +87,4 @@ if ($Missing) {
     Say "required addons present: $($Required -join ', ')"
 }
 
-Say "done. Launch, log in, then type /spinup leader (or /spinup follower)."
+Say "done. Each new character sets itself up on first login (type /spinup to see what it did)."

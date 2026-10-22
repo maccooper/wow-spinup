@@ -1,9 +1,8 @@
 ## Interface: 16001
 ## Title: DuoSpinup
-## Notes: /spinup leader | follower — binds, bars, macros, settings for the duo
+## Notes: Applies your setup on a character's first login. /spinup for status.
 ## Author: Mac
-## Version: 0.1.0
-## SavedVariables: DuoSpinupDB
+## Version: 0.2.0
 ## SavedVariablesPerCharacter: DuoSpinupCharDB
 
 Data.lua
