@@ -1,71 +1,31 @@
 # wow-spinup
 
-Every new character on the duo accounts comes up with your setup on its first login.
-No clicking through settings, no relog, no /reload.
+New characters on the duo accounts (#2, #3) get your full setup on first login: no clicking, no relog, no reload.
 
 ## Launch day
 
-```
-Before servers open (game closed, can be done days early):
-  1. git pull
-  2. double-click install.cmd          (install.cmd -Clean also removes zips/old addons)
-  3. update Questie / QuestieDB / RXPGuides to latest; install says if any are missing
+1. Game closed: update Questie, QuestieDB, RXPGuides (CurseForge app, Forever install).
+2. Double-click `install.cmd`. It backs up `WTF` and tells you if an addon is missing.
+3. Log in, create characters, play. Chat prints `Spinup: set up this character: ...`. Anything red didn't apply.
 
-Servers up:
-  4. log in, create characters, enter world. That's it.
-     Chat shows one "Spinup: set up this character: ..." line per character.
-```
+At character select, make sure **Load out of date AddOns** is ticked.
 
-Beta/testing: `install.cmd -Flavor _classic_beta_ -Accounts 80784825#1`
+## What you get
 
-## What goes where
+- **Files** (copied by install from `golden/`): keybinds, Edit Mode layout "main", macros (`Target`/`Follow` use `party1`, so no names needed), account settings, graphics/sound.
+- **DuoSpinup** (once per character, then never again): bars 2–4 on, layout "main", per-character settings, RXP profile "Duo". It also restores binds/macros if the server wiped them.
+- **Quests** (RXP, already configured): the leader's guide quests get shared, and the follower accepts them. Off route nothing is automatic. To take everything, tick Questie → Auto → Auto Accept Quests on the follower.
 
-| Setting | How it gets there |
-|---|---|
-| Keybinds, Edit Mode layout "main", macros, account settings | `install` copies `golden/account/*` into accounts #2 and #3 |
-| Graphics / sound | `install` merges `golden/Config.wtf` (never portal/account lines) |
-| Bars on, layout "main" active, nameplate range, quest markers | DuoSpinup, on the character's first login |
-| RXP settings (automation, junk, frame positions) | DuoSpinup starts new characters on RXP profile "Duo" |
-| Binds/macros wiped by server sync | DuoSpinup notices on first login and restores them |
+`/spinup` shows what it did; `/spinup redo` runs it again.
 
-Macros use `party1`, so they work whatever your partner's name is: `Target`, `Follow`, `Sit`, `Dual`.
+## If something's off
 
-After the first login DuoSpinup never touches that character again. `/spinup` shows what it did, `/spinup redo` re-runs it.
+- Layout lost: Edit Mode → Import → paste `golden/editmode-main.txt`, save as **main**.
+- Undo an install: unzip the latest `backups/WTF_*.zip` over `WTF` (game closed).
+- Beta: `install.cmd -Flavor _classic_beta_ -Accounts 80784825#1`
 
-## Files
+## Editing
 
-| Path | What |
-|---|---|
-| `golden/account/` | Copied as-is into each account folder (byte-exact, see `.gitattributes`) |
-| `golden/Config.wtf` | Safe client settings |
-| `golden/editmode-main.txt` | Backup export of the "main" layout. If it's ever lost: Edit Mode → layout dropdown → Import, paste this |
-| `addon/DuoSpinup/Data.lua` | Per-character settings, RXP profile, insurance copies of binds/macros |
-| `scripts/install.ps1` | Backup WTF, copy everything, check addons |
-| `tests/` | Addon run against a fake WoW API: `cd tests && go run . addon_test.lua` |
-
-## Addons
-
-Kept: Questie, QuestieDB, RXPGuides, RXPGuides_Custom (github.com/maccooper/RXPGuides_Custom).
-Dropped: Leatrix Plus (every feature was switched off in Kaniken's settings), SpeedrunSplits, Details.
-
-## Quests
-
-All RXP, no code of ours (both settings are in the Duo profile / RXP defaults):
-- Leader accepts a guide quest -> RXP shares it with the group ("Automatic quest sharing").
-- Follower gets a shared quest that's in its guide -> RXP accepts it (quest automation).
-- Off route: nothing automatic, so your log stays clean. Going off route for a while?
-  Tick Questie -> Auto -> "Auto Accept Quests" on the follower; it then takes everything.
-
-## Ban safety
-
-install only copies files while the game is closed. DuoSpinup only uses the standard addon API
-(`SetCVar`, `SetActionBarToggles`, `C_EditMode.SetActiveLayout`, `SetBinding`, `CreateMacro`),
-once per character, never in combat. It doesn't send keypresses or automate gameplay.
-
-## To verify on beta
-
-- [x] `install.cmd -Flavor _classic_beta_ -Accounts 80784825#1`, make a fresh character
-- [x] Summary line has no red: bars on, layout main, RXP on Duo
-- [x] Binds + layout survive (summary says "binds ok", not "restored")
-- [x] RXP frames are where Kaniken had them without a reload
-- [x] Export the "main" layout string from Edit Mode into `golden/editmode-main.txt` (backup)
+- Settings applied in game: `addon/DuoSpinup/Data.lua`. Copied files: `golden/`.
+- Tests (fake WoW API): `cd tests && go run . addon_test.lua`
+- DuoSpinup only calls the game's own API, never Blizzard UI code (that tainted `/camp` once), and never in combat.
