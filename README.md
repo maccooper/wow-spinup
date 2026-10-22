@@ -1,6 +1,6 @@
 # wow-spinup
 
-Snapshot of my WoW Forever settings (from Kaniken-Justatest), applied by a small addon on each character's first login. The point is a fresh-server setup on both duo accounts without logging out and re-queueing.
+Snapshot of my WoW Forever beta settings, applied by a small addon on each character's first login. The point is a fresh-server setup on both duo accounts without logging out and re-queueing.
 
 - `golden/`: files install copies into WTF (binds, Edit Mode layout "main", macros, account + graphics settings)
 - `addon/DuoSpinup/`: runs once per character: bars 2–4, layout "main", per-character settings, RXP "Duo" profile, and restores binds/macros if the server wiped them
