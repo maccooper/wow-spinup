@@ -38,6 +38,7 @@ After the first login DuoSpinup never touches that character again. `/spinup` sh
 |---|---|
 | `golden/account/` | Copied as-is into each account folder (byte-exact, see `.gitattributes`) |
 | `golden/Config.wtf` | Safe client settings |
+| `golden/editmode-main.txt` | Backup export of the "main" layout. If it's ever lost: Edit Mode → layout dropdown → Import, paste this |
 | `addon/DuoSpinup/Data.lua` | Per-character settings, RXP profile, insurance copies of binds/macros |
 | `scripts/install.ps1` | Backup WTF, copy everything, check addons |
 | `tests/` | Addon run against a fake WoW API: `cd tests && go run . addon_test.lua` |
@@ -59,4 +60,4 @@ once per character, never in combat. It doesn't send keypresses or automate game
 - [ ] Summary line has no red: bars on, layout main, RXP on Duo
 - [ ] Binds + layout survive (summary says "binds ok", not "restored")
 - [ ] RXP frames are where Kaniken had them without a reload
-- [ ] Export the "main" layout string from Edit Mode into `golden/editmode-main.txt` (backup)
+- [x] Export the "main" layout string from Edit Mode into `golden/editmode-main.txt` (backup)
