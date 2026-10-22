@@ -39,7 +39,7 @@ if (Get-ChildItem $Wtf -ErrorAction SilentlyContinue) {
 
 # 2. Optional cleanup: zips, empty leftover folders, addons we dropped.
 if ($Clean) {
-    $Unwanted = @("SpeedrunSplits", "Details")
+    $Unwanted = @("Leatrix_Plus", "SpeedrunSplits", "Details")
     Get-ChildItem $AddOns -Filter *.zip | ForEach-Object { Remove-Item $_.FullName; Say "removed $($_.Name)" }
     Get-ChildItem $AddOns -Directory | Where-Object {
         $Unwanted -contains $_.Name -or -not (Get-ChildItem $_.FullName -Recurse -File -ErrorAction SilentlyContinue)
@@ -87,11 +87,11 @@ foreach ($acct in $Accounts) {
 }
 
 # 6. Check required addons.
-$Required = @("Questie", "QuestieDB", "RXPGuides", "RXPGuides_Custom", "Leatrix_Plus")
+$Required = @("Questie", "QuestieDB", "RXPGuides", "RXPGuides_Custom")
 $Missing = $Required | Where-Object { -not (Test-Path (Join-Path $AddOns "$_\$_*.toc")) }
 if ($Missing) {
     Say "MISSING addons: $($Missing -join ', ')"
-    Say "  Questie/QuestieDB/RXPGuides/Leatrix_Plus: latest from CurseForge/GitHub into $AddOns"
+    Say "  Questie/QuestieDB/RXPGuides: latest from CurseForge/GitHub into $AddOns"
     Say "  RXPGuides_Custom: git clone git@github.com:maccooper/RXPGuides_Custom.git into $AddOns"
 } else {
     Say "required addons present: $($Required -join ', ')"
